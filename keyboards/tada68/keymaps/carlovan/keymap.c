@@ -6,20 +6,67 @@
 // entirely and just use numbers.
 #define _BL 0
 #define _FL 1
+#define _RQW 2
+#define _LQW 3
 
 enum custom_keycodes {
   EMAIL = SAFE_RANGE
 };
 
+void disable_layer(const int l) {
+    layer_state &= ~(1<<l);
+}
+
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  switch (keycode) {
-    case EMAIL:
-      if (record->event.pressed) {
-        SEND_STRING("giulio.carlassare@gmail.com");
-      }
-      break;
-  }
-  return true;
+    if (record->event.pressed) {
+        switch (keycode) {
+            // Email macro
+            case EMAIL:
+                SEND_STRING("giulio.carlassare@gmail.com");
+                break;
+
+            // Left shift has just been pressed. Kill all left alphas.
+            case KC_LSFT:
+                layer_state |= 1<<_LQW;
+                break;
+
+            // Right shift has just been pressed. Kill all right alphas.
+            case KC_RSFT:
+                layer_state |= 1<<_RQW;
+                break;
+
+            // Punitive layers can't be cancelled by a no-op key. This prevents
+            // user from hitting key again to get the letter.
+            case KC_NO:
+                break;
+
+            // Undo any punitive layers once any other key has been pressed.
+            // This allows user to enter a sequence of shifted keys without
+            // having to alternate between left and right shift. For example,
+            // when typing "UPS". Too short to warrant CAPS LOCK use, but would
+            // require using both shift keys if we didn't remove the blockade
+            // on the "wrong" side of the board.
+            default:
+                disable_layer(_LQW);
+                disable_layer(_RQW);
+        }
+
+    } else {
+
+        switch (keycode) {
+            case KC_NO:
+                break;
+
+            // Make sure punitive layers are released if user pressed a
+            // shift key, but changed their mind and decided to not shift
+            // anything at all
+            default:
+                disable_layer(_LQW);
+                disable_layer(_RQW);
+
+        }
+	}
+    return true;
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -29,9 +76,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * |----------------------------------------------------------------|
    * |Tab  |  Q|  W|  E|  R|  T|  Y|  U|  I|  O|  P|  [|  ]|  \  |Del |
    * |----------------------------------------------------------------|
-   * |CAPS   |  A|  S|  D|  F|  G|  H|  J|  K|  L|  ;|  '|Return |PgUp|
+   * |CAPS   |  A|  S|  D|  F|  G|  H|  J|  K|  L|  ;|  '|Return |Hme |
    * |----------------------------------------------------------------|
-   * |Shift   |  Z|  X|  C|  V|  B|  N|  M|  ,|  .|  /|Shift | Up|PgDn|
+   * |Shift   |  Z|  X|  C|  V|  B|  N|  M|  ,|  .|  /|Shift | Up|End |
    * |----------------------------------------------------------------|
    * |Ctrl|Win |Alt |        Space          |Alt| FN|Ctrl|Lef|Dow|Rig |
    * `----------------------------------------------------------------'
@@ -47,9 +94,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
    * ,----------------------------------------------------------------.
    * |   | F1|F2 |F3 |F4 |F5 |F6 |F7 |F8 |F9 |F10|F11|F12|Del    |Ins |
    * |----------------------------------------------------------------|
-   * |     |   |Up |   |   |   |   |   |   |   |   |   |   |     |Hme |
+   * |     |   |Up |   |   |   |   |   |   |   |   |   |   |PrScr|PgUp|
    * |----------------------------------------------------------------|
-   * |      |<- |Dn | ->|  |EMAIL|  |   |   |   |   |   |        |End |
+   * |      |<- |Dn | ->|  |EMAIL|  |   |   |   |   |   |        |PgDn|
    * |----------------------------------------------------------------|
    * |        |   |   |Bl-|BL |BL+|   |VU-|VU+|MUT|   |   McL|MsU|McR |
    * |----------------------------------------------------------------|
@@ -62,4 +109,19 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   _______,KC_LEFT,KC_DOWN,KC_RIGHT,_______,EMAIL,_______,_______,_______,_______,_______,_______,        _______,KC_PGDN, \
   _______,_______,_______,BL_DEC, BL_TOGG,BL_INC, _______,KC_VOLD,KC_VOLU,KC_MUTE,_______,KC_BTN1, KC_MS_U, KC_BTN2, \
   _______,_______,_______,                 _______,               _______,_______,_______,KC_MS_L,KC_MS_D, KC_MS_R),
+ 
+[_RQW] = LAYOUT_ansi(
+  _______,    _______,   _______,   _______,   _______,   _______,   _______,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, KC_NO, _______,KC_NO, \
+  _______,  _______,   _______,   _______,   _______,   _______,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO, KC_NO,KC_NO,_______, \
+  _______, _______,   _______,   _______,   _______,   _______,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,KC_NO,         _______,_______,  \
+  _______,         _______,   _______,   _______,   _______,   _______,   KC_NO,   KC_NO,   KC_NO,KC_NO, KC_NO,   _______,_______,_______, \
+  _______, _______,_______,                _______,                        _______,_______,_______, _______,_______,_______),
+
+[_LQW] = LAYOUT_ansi(
+  _______,    KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   _______,   _______,   _______,   _______,   _______, _______, _______,_______, \
+  _______,  KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   _______,   _______,   _______,   _______,   _______,   _______, _______,_______,_______, \
+  _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   _______,   _______,   _______,   _______,   _______,_______,         _______,_______,  \
+  _______,         KC_NO,   KC_NO,   KC_NO,   KC_NO,   _______,   _______,   _______,   _______,_______, _______,   _______,_______,_______, \
+  _______, _______,_______,                _______,                        _______,_______,_______, _______,_______,_______),
 };
+
