@@ -16,7 +16,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 	[ARROWS] = KEYMAP(
 		KC_UP, KC_DOWN, KC_ENT, 
-		KC_NO, KC_NO, KC_NO),
+		RGB_MOD, KC_NO, RGB_TOG),
 };
 
 void matrix_init_user(void) {
